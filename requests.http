@@ -1,0 +1,21 @@
+### Create product
+POST http://localhost:8080/products
+Content-Type: application/json
+
+{
+  "name": "Keyboard",
+  "description": "Mechanical keyboard",
+  "price": 79.99,
+  "quantity": 10
+}
+
+### Get all products
+GET http://localhost:8080/products
+
+### Receive stock
+POST http://localhost:8080/api/inventory/products/1/receive
+Content-Type: application/json
+
+{
+  "quantity": 5
+}
