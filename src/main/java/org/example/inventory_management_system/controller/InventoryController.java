@@ -18,8 +18,17 @@ public class InventoryController {
     @PostMapping("/products/{id}/receive")
     public Product receive(
             @PathVariable Long id,
-            @RequestBody StockRequest request) {
+            @RequestBody StockRequest request)
+    {
 
         return inventoryService.receive(id, request.getQuantity());
+    }
+
+    @PostMapping("/products/{id}/ship")
+    public Product ship(
+            @PathVariable Long id,
+            @RequestBody StockRequest request)
+    {
+        return inventoryService.ship(id, request.getQuantity());
     }
 }
