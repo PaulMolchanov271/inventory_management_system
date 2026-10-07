@@ -1,19 +1,366 @@
-const state={products:[]};
-const $=s=>document.querySelector(s);
-const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"EUR"}).format(Number(n)||0);
-async function api(url,options={}){const r=await fetch(url,{headers:{"Content-Type":"application/json",...(options.headers||{})},...options});if(!r.ok){let msg="Request failed";try{const j=await r.json();msg=j.message||msg}catch{}throw new Error(msg)}return r.status===204?null:r.json()}
-function showToast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400)}
-function navigate(section){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));$("#"+section+"-section").classList.add("active");document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.section===section));$("#page-title").textContent=section==="stock"?"Stock movement":section[0].toUpperCase()+section.slice(1);if(section==="products")renderProducts()}
-document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.section)));
-document.querySelectorAll("[data-section-link]").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.sectionLink)));
-$("#add-product-btn").onclick=()=>$("#product-dialog").showModal();
-$("#search").addEventListener("input",renderProducts);
-async function load(){try{state.products=await api("/products");renderDashboard();renderProducts();renderReceive()}catch(e){showToast("Could not load products: "+e.message)}}
-function renderDashboard(){const p=state.products,total=p.reduce((a,x)=>a+(x.quantity||0),0),value=p.reduce((a,x)=>a+(Number(x.price)||0)*(x.quantity||0),0),low=p.filter(x=>(x.quantity||0)<=5).length;$("#total-products").textContent=p.length;$("#total-units").textContent=total;$("#inventory-value").textContent=money(value);$("#low-stock").textContent=low;const max=Math.max(1,...p.map(x=>x.quantity||0));$("#overview-list").innerHTML=p.length?p.slice(0,7).map(x=>`<div class="overview-row"><div class="overview-name">${esc(x.name)}</div><div class="bar"><i style="width:${Math.round((x.quantity||0)/max*100)}%"></i></div><div class="stock-num">${x.quantity||0} units</div></div>`).join(""):'<div class="empty">No products yet.</div>'}
-function renderProducts(){const q=($("#search")?.value||"").toLowerCase();const p=state.products.filter(x=>(x.name||"").toLowerCase().includes(q)||(x.description||"").toLowerCase().includes(q));$("#product-table").innerHTML=p.length?p.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.description||"—")}</td><td>${money(x.price)}</td><td><span class="stock-badge ${x.quantity<=5?"low":""}">${x.quantity} units</span></td><td><button class="ghost" onclick="quickReceive(${x.id})">Receive</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">No products found.</td></tr>'}
-function renderReceive(){const s=$("#receive-product");s.innerHTML=state.products.length?state.products.map(x=>`<option value="${x.id}">${esc(x.name)} — ${x.quantity} units</option>`).join(""):'<option>No products available</option>'}
-function quickReceive(id){navigate("stock");$("#receive-product").value=id;$("#receive-quantity").focus()}
-$("#receive-form").addEventListener("submit",async e=>{e.preventDefault();const id=$("#receive-product").value,q=Number($("#receive-quantity").value);try{await api(`/api/inventory/products/${id}/receive`,{method:"POST",body:JSON.stringify({quantity:q})});$("#movement-message").textContent="Stock updated successfully.";showToast("Stock received");$("#receive-quantity").value=1;await load()}catch(err){$("#movement-message").textContent=err.message;}})
-$("#product-form").addEventListener("submit",async e=>{e.preventDefault();const product={name:$("#product-name").value.trim(),description:$("#product-description").value.trim(),price:Number($("#product-price").value),quantity:Number($("#product-quantity").value)};try{await api("/products",{method:"POST",body:JSON.stringify(product)});$("#product-dialog").close();e.target.reset();$("#product-quantity").value=0;showToast("Product created");await load()}catch(err){$("#product-message").textContent=err.message}});
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+const state = { products: [] };
+
+const $ = selector => document.querySelector(selector);
+
+const money = value =>
+    new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "EUR"
+    }).format(Number(value) || 0);
+
+async function api(url, options = {}) {
+    const response = await fetch(url, {
+        headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        },
+        ...options
+    });
+
+    if (!response.ok) {
+        let message = "Request failed";
+
+        try {
+            const json = await response.json();
+            message = json.message || message;
+        } catch {
+            // Ignore invalid or empty error responses.
+        }
+
+        throw new Error(message);
+    }
+
+    return response.status === 204 ? null : response.json();
+}
+
+function showToast(message) {
+    const toast = $("#toast");
+
+    toast.textContent = message;
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2400);
+}
+
+function navigate(section) {
+    document
+        .querySelectorAll(".section")
+        .forEach(element => element.classList.remove("active"));
+
+    $("#" + section + "-section").classList.add("active");
+
+    document
+        .querySelectorAll(".nav-item")
+        .forEach(element =>
+            element.classList.toggle(
+                "active",
+                element.dataset.section === section
+            )
+        );
+
+    $("#page-title").textContent =
+        section === "stock"
+            ? "Stock movement"
+            : section[0].toUpperCase() + section.slice(1);
+
+    if (section === "products") {
+        renderProducts();
+    }
+}
+
+document
+    .querySelectorAll(".nav-item")
+    .forEach(button =>
+        button.addEventListener(
+            "click",
+            () => navigate(button.dataset.section)
+        )
+    );
+
+document
+    .querySelectorAll("[data-section-link]")
+    .forEach(button =>
+        button.addEventListener(
+            "click",
+            () => navigate(button.dataset.sectionLink)
+        )
+    );
+
+$("#add-product-btn").onclick = () =>
+    $("#product-dialog").showModal();
+
+$("#search").addEventListener("input", renderProducts);
+
+async function load() {
+    try {
+        state.products = await api("/products");
+
+        renderDashboard();
+        renderProducts();
+        renderStockProducts();
+    } catch (error) {
+        showToast("Could not load products: " + error.message);
+    }
+}
+
+function renderDashboard() {
+    const products = state.products;
+
+    const totalUnits = products.reduce(
+        (total, product) => total + (product.quantity || 0),
+        0
+    );
+
+    const inventoryValue = products.reduce(
+        (total, product) =>
+            total +
+            (Number(product.price) || 0) *
+            (product.quantity || 0),
+        0
+    );
+
+    const lowStock = products.filter(
+        product => (product.quantity || 0) <= 5
+    ).length;
+
+    $("#total-products").textContent = products.length;
+    $("#total-units").textContent = totalUnits;
+    $("#inventory-value").textContent = money(inventoryValue);
+    $("#low-stock").textContent = lowStock;
+
+    const maxQuantity = Math.max(
+        1,
+        ...products.map(product => product.quantity || 0)
+    );
+
+    $("#overview-list").innerHTML = products.length
+        ? products
+            .slice(0, 7)
+            .map(product => `
+<div class="overview-row">
+    <div class="overview-name">
+    ${escapeHtml(product.name)}
+</div>
+
+<div class="bar">
+    <i
+        style="width:${Math.round(
+                                (product.quantity || 0) /
+                                maxQuantity *
+                                100
+                            )}%"
+    ></i>
+</div>
+
+<div class="stock-num">
+    ${product.quantity || 0} units
+</div>
+</div>
+`)
+            .join("")
+        : '<div class="empty">No products yet.</div>';
+}
+
+function renderProducts() {
+    const query = ($("#search")?.value || "").toLowerCase();
+
+    const products = state.products.filter(product =>
+        (product.name || "").toLowerCase().includes(query) ||
+        (product.description || "").toLowerCase().includes(query)
+    );
+
+    $("#product-table").innerHTML = products.length
+        ? products
+            .map(product => `
+<tr>
+<td>
+${escapeHtml(product.name)}
+</td>
+
+<td>
+    ${escapeHtml(product.description || "—")}
+</td>
+
+<td>
+    ${money(product.price)}
+</td>
+
+<td>
+                        <span
+                            class="stock-badge ${
+                                product.quantity <= 5 ? "low" : ""
+                            }"
+                        >
+                            ${product.quantity} units
+                        </span>
+</td>
+
+<td>
+    <button
+        class="ghost"
+        onclick="quickReceive(${product.id})"
+    >
+        Receive
+    </button>
+
+    <button
+        class="ghost"
+        onclick="quickShip(${product.id})"
+    >
+        Ship
+    </button>
+</td>
+</tr>
+`)
+            .join("")
+        : `
+<tr>
+<td colspan="5" class="empty">
+    No products found.
+</td>
+</tr>
+`;
+}
+
+function renderStockProducts() {
+    const options = state.products.length
+        ? state.products
+            .map(product => `
+<option value="${product.id}">
+    ${escapeHtml(product.name)} — ${product.quantity} units
+</option>
+    `)
+            .join("")
+        : `
+<option value="">
+    No products available
+</option>
+    `;
+
+    $("#receive-product").innerHTML = options;
+    $("#ship-product").innerHTML = options;
+}
+
+function quickReceive(id) {
+    navigate("stock");
+
+    $("#receive-product").value = id;
+    $("#receive-quantity").focus();
+}
+
+function quickShip(id) {
+    navigate("stock");
+
+    $("#ship-product").value = id;
+    $("#ship-quantity").focus();
+}
+
+$("#receive-form").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const id = $("#receive-product").value;
+    const quantity = Number($("#receive-quantity").value);
+
+    try {
+        await api(
+            `/api/inventory/products/${id}/receive`,
+{
+    method: "POST",
+        body: JSON.stringify({
+    quantity: quantity
+})
+}
+);
+
+$("#receive-message").textContent =
+    "Stock received successfully.";
+
+showToast("Stock received");
+
+$("#receive-quantity").value = 1;
+
+await load();
+} catch (error) {
+    $("#receive-message").textContent = error.message;
+}
+});
+
+$("#ship-form").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const id = $("#ship-product").value;
+    const quantity = Number($("#ship-quantity").value);
+
+    try {
+        await api(
+            `/api/inventory/products/${id}/ship`,
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    quantity: quantity
+                })
+            }
+        );
+
+        $("#ship-message").textContent =
+            "Stock shipped successfully.";
+
+        showToast("Stock shipped");
+
+        $("#ship-quantity").value = 1;
+
+        await load();
+    } catch (error) {
+        $("#ship-message").textContent = error.message;
+    }
+});
+
+$("#product-form").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const product = {
+        name: $("#product-name").value.trim(),
+        description: $("#product-description").value.trim(),
+        price: Number($("#product-price").value),
+        quantity: Number($("#product-quantity").value)
+    };
+
+    try {
+        await api(
+            "/products",
+            {
+                method: "POST",
+                body: JSON.stringify(product)
+            }
+        );
+
+        $("#product-dialog").close();
+
+        event.target.reset();
+
+        $("#product-quantity").value = 0;
+
+        showToast("Product created");
+
+        await load();
+    } catch (error) {
+        $("#product-message").textContent = error.message;
+    }
+});
+
+function escapeHtml(value) {
+    return String(value ?? "").replace(
+        /[&<>"']/g,
+        character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[character]
+    );
+}
+
 load();
