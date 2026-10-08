@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login - Inventory Management System</title>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<main class="auth-container">
+
+    <div class="auth-card">
+
+        <h1>Inventory Management System</h1>
+
+        <h2>Login</h2>
+
+        <form action="/auth/login" method="post">
+
+            <label for="username">
+                Username
+            </label>
+
+            <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    required
+                    autocomplete="username"
+            >
+
+            <label for="password">
+                Password
+            </label>
+
+            <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    autocomplete="current-password"
+            >
+
+            <button type="submit">
+                Login
+            </button>
+
+        </form>
+
+        <p id="error-message" class="error-message">
+            Invalid username or password.
+        </p>
+
+        <p id="logout-message" class="success-message">
+            You have been logged out.
+        </p>
+
+        <p>
+            Don't have an account?
+            <a href="/register.html">Sign up</a>
+        </p>
+
+    </div>
+
+</main>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+
+    const errorMessage = document.getElementById("error-message");
+    const logoutMessage = document.getElementById("logout-message");
+
+    if (params.has("error")) {
+        errorMessage.style.display = "block";
+    }
+
+    if (params.has("logout")) {
+        logoutMessage.style.display = "block";
+    }
+</script>
+
+</body>
+</html>

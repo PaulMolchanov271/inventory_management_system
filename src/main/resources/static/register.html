@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sign up - Inventory Management System</title>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<main class="auth-container">
+
+    <div class="auth-card">
+
+        <h1>Inventory Management System</h1>
+
+        <h2>Sign up</h2>
+
+        <form id="register-form">
+
+            <label for="username">
+                Username
+            </label>
+
+            <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    minlength="3"
+                    maxlength="50"
+                    required
+                    autocomplete="username"
+            >
+
+            <label for="password">
+                Password
+            </label>
+
+            <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    minlength="6"
+                    maxlength="100"
+                    required
+                    autocomplete="new-password"
+            >
+
+            <button type="submit">
+                Sign up
+            </button>
+
+        </form>
+
+        <p id="message"></p>
+
+        <p>
+            Already have an account?
+            <a href="/login.html">Login</a>
+        </p>
+
+    </div>
+
+</main>
+
+<script>
+    const form = document.getElementById("register-form");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        try {
+            const response = await fetch("/auth/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username,
+                    password
+                })
+            });
+
+            if (response.ok) {
+                message.textContent =
+                    "Registration successful. Redirecting to login...";
+
+                message.className = "success-message";
+
+                setTimeout(() => {
+                    window.location.href = "/login.html";
+                }, 1000);
+
+                return;
+            }
+
+            const error = await response.text();
+
+            message.textContent =
+                error || "Registration failed.";
+
+            message.className = "error-message";
+
+        } catch (error) {
+            message.textContent =
+                "Unable to connect to the server.";
+
+            message.className = "error-message";
+        }
+    });
+</script>
+
+</body>
+</html>

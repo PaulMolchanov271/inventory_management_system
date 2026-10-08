@@ -2,8 +2,8 @@ package org.example.inventory_management_system.service;
 
 import org.example.inventory_management_system.dto.AuthResponse;
 import org.example.inventory_management_system.dto.RegisterRequest;
-import org.example.inventory_management_system.enums.Role;
 import org.example.inventory_management_system.entity.User;
+import org.example.inventory_management_system.enums.Role;
 import org.example.inventory_management_system.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,6 +39,19 @@ public class AuthService {
         return new AuthResponse(
                 savedUser.getUsername(),
                 savedUser.getRole()
+        );
+    }
+
+    public AuthResponse getCurrentUser(String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User not found")
+                );
+
+        return new AuthResponse(
+                user.getUsername(),
+                user.getRole()
         );
     }
 }
