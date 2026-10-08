@@ -5,6 +5,7 @@ import org.example.inventory_management_system.dto.AuthResponse;
 import org.example.inventory_management_system.dto.RegisterRequest;
 import org.example.inventory_management_system.service.AuthService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,5 +24,13 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest request) {
 
         return authService.register(request);
+    }
+
+    @GetMapping("/me")
+    public AuthResponse currentUser(Authentication authentication) {
+
+        return authService.getCurrentUser(
+                authentication.getName()
+        );
     }
 }
