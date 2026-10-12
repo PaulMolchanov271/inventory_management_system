@@ -1,5 +1,6 @@
 package org.example.inventory_management_system.controller;
 
+import jakarta.validation.Valid;
 import org.example.inventory_management_system.entity.Product;
 import org.example.inventory_management_system.dto.StockRequest;
 import org.example.inventory_management_system.service.InventoryService;
@@ -18,7 +19,7 @@ public class InventoryController {
     @PostMapping("/products/{id}/receive")
     public Product receive(
             @PathVariable Long id,
-            @RequestBody StockRequest request)
+            @Valid @RequestBody StockRequest request)
     {
 
         return inventoryService.receive(id, request.getQuantity());
@@ -27,7 +28,7 @@ public class InventoryController {
     @PostMapping("/products/{id}/ship")
     public Product ship(
             @PathVariable Long id,
-            @RequestBody StockRequest request)
+            @Valid @RequestBody StockRequest request)
     {
         return inventoryService.ship(id, request.getQuantity());
     }

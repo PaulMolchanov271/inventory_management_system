@@ -4,6 +4,7 @@ import org.example.inventory_management_system.dto.AuthResponse;
 import org.example.inventory_management_system.dto.RegisterRequest;
 import org.example.inventory_management_system.entity.User;
 import org.example.inventory_management_system.enums.Role;
+import org.example.inventory_management_system.exception.UsernameAlreadyExistsException;
 import org.example.inventory_management_system.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new UsernameAlreadyExistsException();
         }
 
         User user = new User();
